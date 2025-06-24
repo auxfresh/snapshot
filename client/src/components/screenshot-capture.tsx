@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { captureScreenshot } from "@/lib/screenshot-api";
 import type { Screenshot } from "@shared/schema";
 import type { ScreenshotSettings } from "@/pages/home";
@@ -29,6 +30,7 @@ export default function ScreenshotCapture({
   isCapturing,
   setIsCapturing,
 }: ScreenshotCaptureProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [urlError, setUrlError] = useState("");
@@ -94,6 +96,7 @@ export default function ScreenshotCapture({
       backgroundColor: settings.backgroundColor,
       frameStyle: settings.frameStyle,
       frameColor: settings.frameColor,
+      firebaseUid: user?.uid,
     });
   };
 

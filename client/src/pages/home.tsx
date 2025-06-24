@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { Camera, Settings, History } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import AuthHeader from "@/components/auth/AuthHeader";
 import ScreenshotCapture from "@/components/screenshot-capture";
 import BackgroundOptions from "@/components/background-options";
 import FrameOptions from "@/components/frame-options";
 import PreviewArea from "@/components/preview-area";
 import RecentScreenshots from "@/components/recent-screenshots";
-import type { Screenshot } from "@shared/schema";
+import type { Screenshot, UserPreferences } from "@shared/schema";
 
 export interface ScreenshotSettings {
   deviceType: "mobile" | "desktop";
@@ -15,6 +18,8 @@ export interface ScreenshotSettings {
 }
 
 export default function Home() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [url, setUrl] = useState("");
   const [settings, setSettings] = useState<ScreenshotSettings>({
     deviceType: "mobile",
@@ -25,33 +30,78 @@ export default function Home() {
   const [currentScreenshot, setCurrentScreenshot] = useState<Screenshot | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
+  // Sync user with backend when authenticated
+  const syncUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const response = await apiRequest("POST", "/api/auth/sync-user", userData);
+      return await response.json();
+    },
+  });
+
+  // Load user preferences
+  const { data: userPreferences } = useQuery({
+    queryKey: ["/api/users/preferences", user?.uid],
+    queryFn: async () => {
+      if (!user?.uid) return null;
+      const response = await apiRequest("GET", `/api/users/${user.uid}/preferences`);
+      return await response.json();
+    },
+    enabled: !!user?.uid,
+  });
+
+  // Update user preferences
+  const updatePreferencesMutation = useMutation({
+    mutationFn: async (updates: Partial<ScreenshotSettings>) => {
+      if (!user?.uid) return;
+      const response = await apiRequest("PUT", `/api/users/${user.uid}/preferences`, {
+        defaultDeviceType: updates.deviceType,
+        defaultBackgroundColor: updates.backgroundColor,
+        defaultFrameStyle: updates.frameStyle,
+        defaultFrameColor: updates.frameColor,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users/preferences"] });
+    },
+  });
+
+  // Sync user when authenticated
+  useEffect(() => {
+    if (user && !syncUserMutation.data) {
+      syncUserMutation.mutate({
+        firebaseUid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      });
+    }
+  }, [user]);
+
+  // Load user preferences into settings
+  useEffect(() => {
+    if (userPreferences) {
+      setSettings({
+        deviceType: userPreferences.defaultDeviceType as "mobile" | "desktop",
+        backgroundColor: userPreferences.defaultBackgroundColor,
+        frameStyle: userPreferences.defaultFrameStyle as "framed" | "rounded",
+        frameColor: userPreferences.defaultFrameColor,
+      });
+    }
+  }, [userPreferences]);
+
   const updateSettings = (updates: Partial<ScreenshotSettings>) => {
     setSettings(prev => ({ ...prev, ...updates }));
+    
+    // Save preferences for authenticated users
+    if (user) {
+      updatePreferencesMutation.mutate(updates);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Camera className="text-primary-foreground text-sm" />
-              </div>
-              <h1 className="text-xl font-bold text-gray-900">SnapShot</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="text-gray-500 hover:text-gray-700 transition-colors">
-                <History className="w-5 h-5" />
-              </button>
-              <button className="text-gray-500 hover:text-gray-700 transition-colors">
-                <Settings className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthHeader />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

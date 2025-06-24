@@ -1,15 +1,91 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { captureScreenshotSchema, insertScreenshotSchema } from "@shared/schema";
+import { captureScreenshotSchema, insertScreenshotSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // User authentication endpoints
+  app.post("/api/auth/sync-user", async (req, res) => {
+    try {
+      const { firebaseUid, email, displayName, photoURL } = insertUserSchema.parse(req.body);
+      
+      // Check if user exists
+      let user = await storage.getUserByFirebaseUid(firebaseUid);
+      
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          firebaseUid,
+          email,
+          displayName,
+          photoURL,
+        });
+        
+        // Create default preferences
+        await storage.createUserPreferences({
+          userId: user.id,
+          defaultDeviceType: "mobile",
+          defaultBackgroundColor: "#6366F1",
+          defaultFrameStyle: "framed",
+          defaultFrameColor: "#FFFFFF",
+        });
+      } else {
+        // Update existing user
+        user = await storage.updateUser(firebaseUid, {
+          email,
+          displayName,
+          photoURL,
+        });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("User sync error:", error);
+      res.status(500).json({ message: "Failed to sync user" });
+    }
+  });
+
+  app.get("/api/users/:firebaseUid/preferences", async (req, res) => {
+    try {
+      const { firebaseUid } = req.params;
+      const user = await storage.getUserByFirebaseUid(firebaseUid);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const preferences = await storage.getUserPreferences(user.id);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Get preferences error:", error);
+      res.status(500).json({ message: "Failed to get preferences" });
+    }
+  });
+
+  app.put("/api/users/:firebaseUid/preferences", async (req, res) => {
+    try {
+      const { firebaseUid } = req.params;
+      const updates = req.body;
+      
+      const user = await storage.getUserByFirebaseUid(firebaseUid);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const preferences = await storage.updateUserPreferences(user.id, updates);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Update preferences error:", error);
+      res.status(500).json({ message: "Failed to update preferences" });
+    }
+  });
+
   // Capture screenshot endpoint
   app.post("/api/screenshots/capture", async (req, res) => {
     try {
-      const { url, deviceType, backgroundColor, frameStyle, frameColor } = 
-        captureScreenshotSchema.parse(req.body);
+      const { url, deviceType, backgroundColor, frameStyle, frameColor, firebaseUid } = 
+        captureScreenshotSchema.extend({ firebaseUid: z.string().optional() }).parse(req.body);
 
       // Get ScreenshotOne API key from environment
       const apiKey = process.env.SCREENSHOTONE_API_KEY || process.env.SCREENSHOT_API_KEY || "";
@@ -49,8 +125,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract title from URL
       const title = new URL(url).hostname.replace('www.', '');
 
+      // Get user ID if authenticated
+      let userId = 1; // Default for anonymous users
+      if (firebaseUid) {
+        const user = await storage.getUserByFirebaseUid(firebaseUid);
+        if (user) {
+          userId = user.id;
+        }
+      }
+
       // Save screenshot to storage
       const screenshot = await storage.createScreenshot({
+        userId,
         url,
         title,
         deviceType,
@@ -80,7 +166,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/screenshots", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const screenshots = await storage.getRecentScreenshots(limit);
+      const firebaseUid = req.query.firebaseUid as string;
+      
+      let userId: number | undefined;
+      if (firebaseUid) {
+        const user = await storage.getUserByFirebaseUid(firebaseUid);
+        userId = user?.id;
+      }
+      
+      const screenshots = await storage.getRecentScreenshots(userId, limit);
       res.json(screenshots);
     } catch (error) {
       console.error("Get screenshots error:", error);

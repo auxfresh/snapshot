@@ -3,15 +3,17 @@ import { Smartphone, Monitor, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { getRecentScreenshots } from "@/lib/screenshot-api";
 import { formatDistanceToNow } from "date-fns";
 
 export default function RecentScreenshots() {
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const { data: screenshots = [], isLoading } = useQuery({
-    queryKey: ["/api/screenshots"],
-    queryFn: () => getRecentScreenshots(8),
+    queryKey: ["/api/screenshots", user?.uid],
+    queryFn: () => getRecentScreenshots(8, user?.uid),
   });
 
   const handleDownload = (screenshot: any) => {
