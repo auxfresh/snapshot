@@ -13,14 +13,14 @@ SnapShot is a full-stack web application that allows users to capture website sc
 - **State Management**: React hooks with TanStack Query for server state
 - **Routing**: Wouter for lightweight client-side routing
 - **UI Components**: Comprehensive shadcn/ui component system with Radix UI primitives
-- **Authentication**: Firebase Authentication with Google Sign-In
+- **Authentication**: Firebase Authentication with Google Sign-In and Email/Password
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ESM modules
 - **API Design**: RESTful endpoints for screenshots, users, and preferences
 - **Development**: Hot reload with Vite integration for full-stack development
-- **Authentication**: Firebase user sync and session management
+- **Authentication**: Firebase user sync, session management, and multiple sign-in methods
 
 ### Data Storage Solutions
 - **Database**: PostgreSQL with Drizzle ORM (production ready)
@@ -119,6 +119,7 @@ Changelog:
 - June 24, 2025: Added user preferences storage and management
 - June 24, 2025: Enhanced screenshot collections with user associations
 - June 24, 2025: Fixed download functionality with proper file serving
+- June 24, 2025: Added email/password authentication with sign up, sign in, and password reset
 ```
 
 ## User Preferences
