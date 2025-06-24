@@ -21,9 +21,10 @@ export default function PreviewArea({
   const handleDownload = () => {
     if (!screenshot) return;
 
-    // Create a link element and trigger download
+    // Use the download endpoint that properly serves the file
+    const downloadUrl = `/api/screenshots/${screenshot.id}/download`;
     const link = document.createElement("a");
-    link.href = screenshot.screenshotUrl;
+    link.href = downloadUrl;
     link.download = `${screenshot.title}-${screenshot.deviceType}.png`;
     document.body.appendChild(link);
     link.click();

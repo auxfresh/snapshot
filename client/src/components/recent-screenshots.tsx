@@ -15,8 +15,9 @@ export default function RecentScreenshots() {
   });
 
   const handleDownload = (screenshot: any) => {
+    const downloadUrl = `/api/screenshots/${screenshot.id}/download`;
     const link = document.createElement("a");
-    link.href = screenshot.screenshotUrl;
+    link.href = downloadUrl;
     link.download = `${screenshot.title}-${screenshot.deviceType}.png`;
     document.body.appendChild(link);
     link.click();

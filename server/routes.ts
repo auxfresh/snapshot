@@ -117,6 +117,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download screenshot endpoint
+  app.get("/api/screenshots/:id/download", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const screenshot = await storage.getScreenshot(id);
+      
+      if (!screenshot) {
+        return res.status(404).json({ message: "Screenshot not found" });
+      }
+
+      // Fetch the image from ScreenshotOne
+      const imageResponse = await fetch(screenshot.screenshotUrl);
+      
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch screenshot: ${imageResponse.status}`);
+      }
+
+      // Set download headers
+      const filename = `${screenshot.title}-${screenshot.deviceType}.png`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'image/png');
+
+      // Pipe the image data to the response
+      const imageBuffer = await imageResponse.arrayBuffer();
+      res.send(Buffer.from(imageBuffer));
+    } catch (error) {
+      console.error("Download screenshot error:", error);
+      res.status(500).json({ message: "Failed to download screenshot" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
