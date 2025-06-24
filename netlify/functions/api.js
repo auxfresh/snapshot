@@ -1,9 +1,9 @@
 
-const { neon } = require('@neondatabase/serverless');
+import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   const { httpMethod, path, body, queryStringParameters } = event;
   const route = path.replace('/.netlify/functions/api', '');
 
