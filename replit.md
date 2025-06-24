@@ -13,30 +13,37 @@ SnapShot is a full-stack web application that allows users to capture website sc
 - **State Management**: React hooks with TanStack Query for server state
 - **Routing**: Wouter for lightweight client-side routing
 - **UI Components**: Comprehensive shadcn/ui component system with Radix UI primitives
+- **Authentication**: Firebase Authentication with Google Sign-In
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ESM modules
-- **API Design**: RESTful endpoints for screenshot operations
+- **API Design**: RESTful endpoints for screenshots, users, and preferences
 - **Development**: Hot reload with Vite integration for full-stack development
+- **Authentication**: Firebase user sync and session management
 
 ### Data Storage Solutions
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM (production ready)
 - **Connection**: Neon Database serverless PostgreSQL
 - **Schema**: Typed schema definitions with Drizzle-Zod validation
-- **Fallback**: In-memory storage implementation for development
+- **Migration**: Automated database migrations with drizzle-kit
 
 ## Key Components
 
 ### Database Schema
-- **Users Table**: User authentication with username/password
-- **Screenshots Table**: Screenshot metadata including URL, device type, styling options, and file paths
+- **Users Table**: Firebase authentication data (uid, email, display name, photo URL)
+- **Screenshots Table**: Screenshot metadata with user associations, URL, device type, styling options
+- **User Preferences Table**: Saved user defaults for device type, background colors, and frame styles
 - **Validation**: Zod schemas for runtime type checking and API validation
 
 ### API Endpoints
-- `POST /api/screenshots/capture` - Capture new screenshots with customization options
-- `GET /api/screenshots` - Retrieve recent screenshots with optional limit
+- `POST /api/auth/sync-user` - Sync Firebase user with database
+- `GET /api/users/:firebaseUid/preferences` - Get user preferences
+- `PUT /api/users/:firebaseUid/preferences` - Update user preferences
+- `POST /api/screenshots/capture` - Capture new screenshots with user association
+- `GET /api/screenshots` - Retrieve recent screenshots (filtered by user if authenticated)
 - `GET /api/screenshots/:id` - Get specific screenshot details
+- `GET /api/screenshots/:id/download` - Download screenshot file
 - `DELETE /api/screenshots/:id` - Remove screenshots
 
 ### Frontend Components
@@ -106,7 +113,12 @@ SnapShot is a full-stack web application that allows users to capture website sc
 
 ```
 Changelog:
-- June 24, 2025. Initial setup
+- June 24, 2025: Initial setup
+- June 24, 2025: Added Firebase Authentication with Google Sign-In
+- June 24, 2025: Implemented PostgreSQL database with user accounts
+- June 24, 2025: Added user preferences storage and management
+- June 24, 2025: Enhanced screenshot collections with user associations
+- June 24, 2025: Fixed download functionality with proper file serving
 ```
 
 ## User Preferences

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { signOutUser } from "@/lib/firebase";
+import { signOutUser, isFirebaseConfigured } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import LoginDialog from "./LoginDialog";
 
@@ -94,10 +94,14 @@ export default function AuthHeader() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </>
-              ) : (
+              ) : isFirebaseConfigured ? (
                 <Button onClick={() => setShowLoginDialog(true)}>
                   Sign In
                 </Button>
+              ) : (
+                <div className="text-sm text-gray-500">
+                  Sign-in available with Firebase setup
+                </div>
               )}
             </div>
           </div>
