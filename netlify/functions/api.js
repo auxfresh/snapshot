@@ -5,7 +5,19 @@ const sql = neon(process.env.DATABASE_URL);
 
 export const handler = async (event, context) => {
   const { httpMethod, path, body, queryStringParameters } = event;
-  const route = path.replace('/.netlify/functions/api', '');
+  
+  // Handle both direct function calls and redirected API calls
+  let route = path.replace('/.netlify/functions/api', '');
+  if (route.startsWith('/api')) {
+    route = route.replace('/api', '');
+  }
+  
+  // Ensure route starts with /
+  if (!route.startsWith('/')) {
+    route = '/' + route;
+  }
+
+  console.log('Processing route:', route, 'Method:', httpMethod);
 
   // CORS headers
   const headers = {
@@ -284,10 +296,25 @@ export const handler = async (event, context) => {
     }
 
     // Default response
+    console.log('No route matched for:', route, 'Method:', httpMethod);
     return {
       statusCode: 404,
       headers,
-      body: JSON.stringify({ message: 'Route not found' })
+      body: JSON.stringify({ 
+        message: 'Route not found',
+        requestedRoute: route,
+        method: httpMethod,
+        availableRoutes: [
+          'POST /auth/sync-user',
+          'GET /users/:firebaseUid/preferences',
+          'PUT /users/:firebaseUid/preferences',
+          'POST /screenshots/capture',
+          'GET /screenshots',
+          'GET /screenshots/:id',
+          'DELETE /screenshots/:id',
+          'GET /screenshots/:id/download'
+        ]
+      })
     };
 
   } catch (error) {

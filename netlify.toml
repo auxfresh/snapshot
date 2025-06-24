@@ -12,6 +12,11 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/.netlify/functions/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
 [[headers]]
   for = "/api/*"
   [headers.values]
